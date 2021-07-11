@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>04 - D3 Scales</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.0.0/d3.js"></script>
+    <script>
+        const data = [4, 8, 15, 16, 23, 42];
+
+        const container = d3.create('div')
+            .style('font', '10px sans-serif')
+            .style('text-align', 'right')
+            .style('color', 'white');
+        document.body.appendChild(container.node());
+
+        const x = d3.scaleLinear()
+            .domain([0, d3.max(data)])
+            .range([0, 420]);
+            // .range([0, 900]);
+
+        container
+            .selectAll('div')
+            .data(data)
+            .join('div')
+            .style('background', 'steelblue')
+            .style('padding', '3px')
+            .style('margin', '1px')
+            .style('width', d => `${x(d)}px`)
+            .text(d => d);
+    </script>
+</body>
+</html>

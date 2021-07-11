@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>07 - Update Pattern</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.0.0/d3.js"></script>
+    <script>
+        const data = [4, 8, 15, 16, 23, 42];
+
+        const container = d3.create('svg')
+            .attr('width', 420)
+            .attr('height', 120)
+            .attr('font-family', 'sans-serif')
+            .attr('font-size', 10)
+            .attr('text-anchor', 'end');
+        document.body.appendChild(container.node());
+        
+        function draw(data) {
+            const x = d3.scaleLinear()
+                .domain([0, d3.max(data)])
+                .range([0, container.attr('width')]);
+
+            const y = d3.scaleBand()
+                .domain(d3.range(data.length))
+                .range([0, container.attr('height')]);
+
+            const bar = container
+                .selectAll('g')
+                .data(data)
+                .join(
+                    enter => enter
+                        .append('g')
+                        .call(g => {
+                            g.append('rect')
+                                .attr('fill', 'steelblue');
+                            g.append('text')
+                                .attr('fill', 'white')
+                                .attr('dy', '.35em')
+                        })
+                )
+                .transition(d3.transition().duration(750))
+                .attr('transform', (d, i) => `translate(0, ${y(i)})`);
+
+            bar.select('rect')
+                .attr('width', d => x(d))
+                .attr('height', y.bandwidth() - 1);
+
+            bar.select('text')
+                .attr('x', d => x(d) - 3)
+                .attr('y', (y.bandwidth() - 1) / 2)
+                .text(d => d);
+        }
+
+        draw(data);
+        setInterval(() => {
+            const randomData = Array.from(
+                {length: Math.max(4, Math.floor(Math.random() * 20))},
+                () => Math.floor(Math.random() * 50)
+            );
+            draw(randomData);
+        }, 2000)
+    </script>
+</body>
+</html>

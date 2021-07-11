@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>02 - HTML Programmatic Bar</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.0.0/d3.js"></script>
+    <script>
+        const data = [4, 8, 15, 16, 23, 42];
+
+        const container = document.createElement('div');
+        container.style.font = '10px sans-serif';
+        container.style['text-align'] = 'right';
+        container.style.color = 'white';
+        document.body.appendChild(container);
+
+        for (const d of data) {
+            const bar = document.createElement('div');
+            bar.style.background = 'steelblue';
+            bar.style.padding = '3px';
+            bar.style.margin = '1px';
+            bar.style.width = `${d * 10}px`
+            bar.textContent = d
+            container.appendChild(bar);
+        }
+    </script>
+</body>
+</html>
