@@ -9,14 +9,14 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.0.0/d3.js"></script>
     <script>
         const container = d3.create('svg')
-            .attr('width', 1400)
+            .attr('width', 1000)
             .attr('height', 400)
             .attr('font-family', 'sans-serif')
             .attr('font-size', 10)
             .attr('text-anchor', 'end');
         document.body.appendChild(container.node());
 
-        const margins = {top: 20, right: 0, bottom: 30, left: 50};
+        const margins = {top: 20, right: 0, bottom: 30, left: 70};
         const barsG = container.append('g');
         const xAxisG = container.append('g')
             .attr('transform', `translate(0, ${container.attr('height') - margins.bottom})`);
@@ -70,40 +70,76 @@
         }
 
 
-        const apiToken = '<FILL ME IN>';
+        const token = '<FILL ME IN>';
         const symbols = ['AAPL', 'AMZN', 'FB', 'GOOGL', 'MSFT', 'NFLX', 'TSLA', 'AMC', 'GME'];
-        const symbolData = {};
 
-        function drawSymbols() {
-            draw(Object.values(symbolData), d => d.symbol, d => d.price);
+        function stocksUpdateExample() {
+            const symbolData = {};
+            function drawSymbols() {
+                draw(Object.values(symbolData), d => d.symbol, d => d.price);
+            }
+            // Initial fetch of all symbols
+            Promise.all(
+                symbols.map((symbol) =>
+                    fetch(`https://finnhub.io/api/v1/quote?${new URLSearchParams({symbol, token}).toString()}`)
+                        .then(resp => resp.json())
+                        .then(quote => [symbol, quote])
+                )
+            ).then(responses => {
+                responses.forEach(([symbol, quote]) => symbolData[symbol] = {symbol, price: quote.c});
+                drawSymbols();
+            });
+
+            // Watch updates with a websocket
+            const socket = new WebSocket(`wss://ws.finnhub.io?token=${token}`);
+            socket.addEventListener('open', () =>
+                symbols.forEach(sym =>
+                    socket.send(JSON.stringify({'type':'subscribe', 'symbol': sym}))
+                )
+            );
+            socket.addEventListener('message', event => {
+                const data = JSON.parse(event.data);
+                if (data.type === 'trade') {
+                    data.data.forEach(({s, p}) => symbolData[s] = {symbol: s, price: p});
+                    drawSymbols();
+                }
+            });
         }
 
-        // Initial fetch of all symbols
-        Promise.all(
-            symbols.map((symbol) =>
-                fetch(`https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${apiToken}`)
-                    .then(resp => resp.json())
-                    .then(quote => [symbol, quote])
-            )
-        ).then(responses => {
-            responses.forEach(([symbol, quote]) => symbolData[symbol] = {symbol, price: quote.c});
-            drawSymbols();
-        });
+        function stockDateExample() {
+            d3.create('div')
+                .call(e => document.body.appendChild(e.node()))
+                .selectAll('button')
+                .data(symbols)
+                .join('button')
+                .text(d => d)
+                .on('click', (_, symbol) => {
+                    const now = new Date();
+                    const nowMinus30D = new Date(now.getTime() - ((24 * 60 * 60 * 1000) * 30));
+                    const params = {
+                        symbol,
+                        resolution: 'D',
+                        from: Math.floor(nowMinus30D.getTime() / 1000),
+                        to: Math.floor(now.getTime()/1000),
+                        token
+                    };
+                    fetch(`https://finnhub.io/api/v1/stock/candle?${new URLSearchParams(params).toString()}`)
+                        .then(resp => resp.json())
+                        .then(json =>
+                            draw(
+                                json.t.map((time, index) => ({
+                                    time: new Date(time * 1000).toISOString().split('T')[0],
+                                    close: json.c[index]
+                                })),
+                                d => d.time,
+                                d => d.close
+                            )
+                        );
+                });
+        }
 
-        // Watch updates with a websocket
-        const socket = new WebSocket(`wss://ws.finnhub.io?token=${apiToken}`);
-        socket.addEventListener('open', () =>
-            symbols.forEach(sym =>
-                socket.send(JSON.stringify({'type':'subscribe', 'symbol': sym}))
-            )
-        );
-        socket.addEventListener('message', event => {
-            const data = JSON.parse(event.data);
-            if (data.type === 'trade') {
-                data.data.forEach(({s, p}) => symbolData[s] = {symbol: s, price: p});
-                drawSymbols();
-            }
-        });
+        stocksUpdateExample();
+        // stockDateExample();
     </script>
 </body>
 </html>
